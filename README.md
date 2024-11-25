@@ -16,7 +16,17 @@
  - **user-item interaction graph** : bipartite graph where users and items are connected based on interactions (e.g. clicks, purchases)
  - **knowledge graph**: Entities and relations between items(eg. an item could be a movie, which has directors, genres, etc)
 
+The KGAT paper preprocesses their datasets using [KB4Rec](https://direct.mit.edu/dint/article/1/2/121/27497/KB4Rec-A-Data-Set-for-Linking-Knowledge-Bases-with). They do this process in order to populate their dataset with more knowledge of the products. This allows them to create more relationships between users and items. We both cannot do and do not need to do this process. This is because the datasets the paper uses links to real world names (i.e. "Titanic" is a real movie and more information can be found on it). However, the Taobao dataset only has id numbers, so we could not do this process in the same way. 
+
+The Taobao dataset does give us a comprehensive look into the users, items, and respective entities. 
+
+
 $\square$ copy code for Amazon-Book preprocessing 
+
+Notes:
+- train.txt and test.txt represent user-item interaction data 
+- kg_final.txt is knowledge graph data (head, relation, tail)
+- item
 
 $\square$ do same for Taobao preprocessing 
 

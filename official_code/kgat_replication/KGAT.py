@@ -66,8 +66,6 @@ class KGAT(object):
 
         # initialize the attentive matrix A for phase I.
         self.A_in = data_config['A_in']
-        #\\todo
-        # - instead of this, we need to write MAGNA eq 3
 
         self.all_h_list = data_config['all_h_list']
         self.all_r_list = data_config['all_r_list']

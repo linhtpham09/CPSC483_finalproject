@@ -43,6 +43,40 @@ extends load_data.py with graph specific preprocessing for KGAT
     - Adjacency and Laplacian matrices
     - Head, relation, tail lists for TransR-based graph embeddings 
 
+### Final output: 
+
+Load Data from data_generator function.
+
+    config = dict()
+    config['n_users'] = data_generator.n_users
+    config['n_items'] = data_generator.n_items
+    config['n_relations'] = data_generator.n_relations
+    config['n_entities'] = data_generator.n_entities
+
+    if args.model_type in ['kgat', 'cfkg']:
+        "Load the laplacian matrix."
+        config['A_in'] = sum(data_generator.lap_list)
+
+        "Load the KG triplets."
+        config['all_h_list'] = data_generator.all_h_list
+        config['all_r_list'] = data_generator.all_r_list
+        config['all_t_list'] = data_generator.all_t_list
+        config['all_v_list'] = data_generator.all_v_list
+
+### CKG Construction in the code 
+1. Data Integration for CKG: 
+- The key components for the CKG are CF data(user-item interactions) and KG data(entity-relation-entity triplets)
+- these are combined within the data_generator object which is an instantiation of the KGAT_Loader class from loader_kgat.py 
+
+There are two main differences we need to understand
+- the batches created during training (i.e. generate_train_A_batch and generate_train_cf_batch): subsetes of the CKG edges. We use these to optimize embeddings and reduce memory usage. 
+- **all_h_list, all_r_list, all_t_list, all_v_list**: these represent the entire CKG where 
+    - all_h_list: heads 
+    - all_r_list: relations
+    - all_t_list: tails
+    - all_v_list: weights for each edge 
+
+    Not batched and represent the complete graph structure. We pass these to GNN layers to propagate info across the graph during training and to compute the Laplacian matrix. 
 
 ## 2. Build KGAT model
  ``KGAT.py``

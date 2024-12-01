@@ -15,10 +15,10 @@ class Data(object):
 
         self.batch_size = args.batch_size
 
-        train_file = path + '/train.txt'
-        test_file = path + '/test.txt'
+        train_file = args.data_path + 'amazon-book/train.txt'
+        test_file = args.data_path + 'amazon-book/test.txt'
 
-        kg_file = path + '/kg_final.txt'
+        kg_file = args.data_path + 'amazon-book/kg_final.txt'
         print('read in files')
 
         # ----------get number of users and items & then load rating data from train_file & test_file------------.
@@ -36,7 +36,7 @@ class Data(object):
 
         # ----------print the basic info about the dataset-------------.
         self.batch_size_kg = self.n_triples // (self.n_train // self.batch_size)
-        self._print_data_info()
+        #self._print_data_info()
 
     # reading train & test interaction data.
     def _load_ratings(self, file_name):

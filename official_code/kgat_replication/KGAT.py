@@ -4,10 +4,13 @@ Tensorflow Implementation of Knowledge Graph Attention Network (KGAT) model in:
 Wang Xiang et al. KGAT: Knowledge Graph Attention Network for Recommendation. In KDD 2019.
 @author: Xiang Wang (xiangwang@u.nus.edu)
 '''
-import tensorflow as tf
+from tensorflow import compat as ttf
+tf=ttf.v1
+tf.disable_v2_behavior()
 import os
 import numpy as np
 import scipy.sparse as sp
+import ast
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
 class KGAT(object):
@@ -84,13 +87,14 @@ class KGAT(object):
         self.kge_dim = args.kge_size
         self.batch_size_kg = args.batch_size_kg
 
-        self.weight_size = eval(args.layer_size)
+        #########################LP CHANGE HERE! eval() to ast.literal_eval()
+        self.weight_size =  ast.literal_eval(args.layer_size)
         self.n_layers = len(self.weight_size)
 
         self.alg_type = args.alg_type
         self.model_type += '_%s_%s_%s_l%d' % (args.adj_type, args.adj_uni_type, args.alg_type, self.n_layers)
-
-        self.regs = eval(args.regs)
+        #########################LP CHANGE HERE! eval() to ast.literal_eval()
+        self.regs = ast.literal_eval(args.regs)
         self.verbose = args.verbose
 
     def _build_inputs(self):
@@ -114,8 +118,12 @@ class KGAT(object):
 
     def _build_weights(self):
         all_weights = dict()
+        
 
-        initializer = tf.contrib.layers.xavier_initializer()
+        "Linh change! xavier = Glorot, just outdated Nov 30"
+        #initializer = tf.contrib.layers.xavier_initializer()
+        initializer = tf.keras.initializers.glorot_uniform()
+
 
         if self.pretrain_data is None:
             all_weights['user_embed'] = tf.Variable(initializer([self.n_users, self.emb_dim]), name='user_embed')
@@ -210,48 +218,59 @@ class KGAT(object):
         return h_e, r_e, pos_t_e, neg_t_e
 
     def _build_loss_phase_I(self):
+        #focuses on optimizing the collaborative filtering part of KGAT 
         pos_scores = tf.reduce_sum(tf.multiply(self.u_e, self.pos_i_e), axis=1)
         neg_scores = tf.reduce_sum(tf.multiply(self.u_e, self.neg_i_e), axis=1)
+        #computes scores for positive and negative item iteractions for each user 
+        #u_e - user embeddings 
+        #i_e - item beddings 
 
         regularizer = tf.nn.l2_loss(self.u_e) + tf.nn.l2_loss(self.pos_i_e) + tf.nn.l2_loss(self.neg_i_e)
         regularizer = regularizer / self.batch_size
+        #Regularizes the embeddings with L2 regularization 
 
         # Using the softplus as BPR loss to avoid the nan error.
         base_loss = tf.reduce_mean(tf.nn.softplus(-(pos_scores - neg_scores)))
+        #BPR loss , softplus function used to stabilize training and avoid NaN errors in gradients 
+
         # maxi = tf.log(tf.nn.sigmoid(pos_scores - neg_scores))
         # base_loss = tf.negative(tf.reduce_mean(maxi))
 
         self.base_loss = base_loss
         self.kge_loss = tf.constant(0.0, tf.float32, [1])
         self.reg_loss = self.regs[0] * regularizer
-        self.loss = self.base_loss + self.kge_loss + self.reg_loss
+        self.loss = self.base_loss + self.kge_loss + self.reg_loss # combines loss components 
 
         # Optimization process.RMSPropOptimizer
-        self.opt = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.loss)
+        self.opt = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.loss) 
 
     def _build_loss_phase_II(self):
+        #focuses on optimizing the Knowledge Graph Embedding part 
+
         def _get_kg_score(h_e, r_e, t_e):
             kg_score = tf.reduce_sum(tf.square((h_e + r_e - t_e)), 1, keepdims=True)
             return kg_score
 
+        #computes scores for positive and negative knowledge graph triples (head, relation, tail)
         pos_kg_score = _get_kg_score(self.h_e, self.r_e, self.pos_t_e)
         neg_kg_score = _get_kg_score(self.h_e, self.r_e, self.neg_t_e)
         
         # Using the softplus as BPR loss to avoid the nan error.
+        #calculate the BPR loss for the knowledge graph 
         kg_loss = tf.reduce_mean(tf.nn.softplus(-(neg_kg_score - pos_kg_score)))
         # maxi = tf.log(tf.nn.sigmoid(neg_kg_score - pos_kg_score))
         # kg_loss = tf.negative(tf.reduce_mean(maxi))
 
-
+        #adds L2 regularization for KG embeddings 
         kg_reg_loss = tf.nn.l2_loss(self.h_e) + tf.nn.l2_loss(self.r_e) + \
                       tf.nn.l2_loss(self.pos_t_e) + tf.nn.l2_loss(self.neg_t_e)
         kg_reg_loss = kg_reg_loss / self.batch_size_kg
 
         self.kge_loss2 = kg_loss
         self.reg_loss2 = self.regs[1] * kg_reg_loss
-        self.loss2 = self.kge_loss2 + self.reg_loss2
+        self.loss2 = self.kge_loss2 + self.reg_loss2 #combines KG loss components 
 
-        # Optimization process.
+        # Optimization process.so then 
         self.opt2 = tf.train.AdamOptimizer(learning_rate=self.lr).minimize(self.loss2)
 
     def _create_bi_interaction_embed(self):

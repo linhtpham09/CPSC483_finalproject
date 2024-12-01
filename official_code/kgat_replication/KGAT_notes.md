@@ -92,6 +92,10 @@ Functions:
 - _build_model_phase_II: Implements TransR to map entitites and relations into relation-specific spaces
 - _build_loss_phase_II: Optimize KG embeddings with BPR loss 
 
+
+Attention functions that we'll need to keep track of: 
+
+
 ## 3. Evaluate Model 
 
 ``batch_test.py`` computes ranking metrics

@@ -4,11 +4,13 @@ Tensorflow Implementation of Knowledge Graph Attention Network (KGAT) model in:
 Wang Xiang et al. KGAT: Knowledge Graph Attention Network for Recommendation. In KDD 2019.
 @author: Xiang Wang (xiangwang@u.nus.edu)
 '''
-import tensorflow as tf
+from tensorflow import compat as ttf
+tf=ttf.v1
+tf.disable_v2_behavior()
 import numpy as np 
 from utility.loader_kgat import KGAT_loader
-#from utility.helper import *
-#from utility.batch_test import *
+from utility.helper import *
+from utility.batch_test import *
 #from time import time
 
 from KGAT import KGAT
@@ -32,7 +34,7 @@ def load_pretrained_data(args):
 
 print('libraries loaded')
 
-tf.random.set_seed(2019)
+tf.random.get_seed(2019)
 np.random.seed(2019)
 
 
@@ -82,7 +84,7 @@ Select one of the models.
 
 model = KGAT(data_config=config, pretrain_data=pretrain_data, args=args)
 
-saver = tf.train.Saver()
+saver = tf.train.Saver() 
 print('model and saver created')
 
 """
@@ -90,61 +92,85 @@ print('model and saver created')
 Save the model parameters.
 """
 
-# layer = '-'.join([str(l) for l in eval(args.layer_size)])
-# weights_save_path = 'data/weights/'
-# ensureDir(weights_save_path)
-# save_saver = tf.train.Saver(max_to_keep=1)
+layer = '-'.join([str(l) for l in eval(args.layer_size)])
+weights_save_path = 'data/weights/'
+ensureDir(weights_save_path)
+save_saver = tf.train.Saver(max_to_keep=1)
 
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# sess = tf.Session(config=config)
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
 
+print('sessions saved')
 """
 *********************************************************
 Reload the model parameters to fine tune.
 """
 
     
-# layer = '-'.join([str(l) for l in eval(args.layer_size)])
-# pretrain_path = '%sweights/%s/%s/%s/l%s_r%s' % (
-#     args.weights_path, args.dataset, model.model_type, layer, str(args.lr), '-'.join([str(r) for r in eval(args.regs)]))
+layer = '-'.join([str(l) for l in eval(args.layer_size)])
+pretrain_path = '%sweights/%s/%s/%s/l%s_r%s' % (
+    args.weights_path, args.dataset, model.model_type, layer, str(args.lr), '-'.join([str(r) for r in eval(args.regs)]))
 
-# ckpt = tf.train.get_checkpoint_state(os.path.dirname(pretrain_path + '/checkpoint'))
-# if ckpt and ckpt.model_checkpoint_path:
-#     sess.run(tf.global_variables_initializer())
-#     saver.restore(sess, ckpt.model_checkpoint_path)
-#     print('load the pretrained model parameters from: ', pretrain_path)
+ckpt = tf.train.get_checkpoint_state(os.path.dirname(pretrain_path + '/checkpoint'))
+if ckpt and ckpt.model_checkpoint_path:
+    sess.run(tf.global_variables_initializer())
+    saver.restore(sess, ckpt.model_checkpoint_path)
+    print('load the pretrained model parameters from: ', pretrain_path)
 
+print('reloaded')
 """
 *********************************************************
 Get the final performance w.r.t. different sparsity levels.
 """
 
-# assert args.test_flag == 'full'
-# users_to_test_list, split_state = data_generator.get_sparsity_split()
+assert args.test_flag == 'full' #full evaluation of users in thetest set 
+users_to_test_list, split_state = data_generator.get_sparsity_split() 
+#users_to_test_list: a list where each element contains users grouped by 
+#their sparsity level
+#split_state: a list of corresponding labels for these groups 
+print('users_to_test_list and split_state loaded')
 
-# users_to_test_list.append(list(data_generator.test_user_dict.keys()))
-# split_state.append('all')
+users_to_test_list.append(list(data_generator.test_user_dict.keys()))
+split_state.append('all')
+#adds all test users (test_user_dict.keys()) to the list 
+print('appended')
 
-# save_path = '%sreport/%s/%s.result' % (args.proj_path, args.dataset, model.model_type)
-# ensureDir(save_path)
-# f = open(save_path, 'w')
-# f.write('embed_size=%d, lr=%.4f, regs=%s, loss_type=%s, \n' % (args.embed_size, args.lr, args.regs,
-#                                                                 args.loss_type))
+save_path = '%sreport/%s/%s.result' % (args.proj_path, args.dataset, model.model_type)
+ensureDir(save_path)
+f = open(save_path, 'w')
+#sets up save path 
+print('sets up save path')
 
-# for i, users_to_test in enumerate(users_to_test_list):
-#     ret = test(sess, model, users_to_test, drop_flag=False, batch_test_flag=batch_test_flag)
+f.write('embed_size=%d, lr=%.4f, regs=%s, loss_type = %s, \n' % (args.embed_size, args.lr, args.regs, args.loss_type))
+#configuration info 
+print('config info')
 
-#     final_perf = "recall=[%s], precision=[%s], hit=[%s], ndcg=[%s]" % \
-#                     ('\t'.join(['%.5f' % r for r in ret['recall']]),
-#                     '\t'.join(['%.5f' % r for r in ret['precision']]),
-#                     '\t'.join(['%.5f' % r for r in ret['hit_ratio']]),
-#                     '\t'.join(['%.5f' % r for r in ret['ndcg']]))
-#     print(final_perf)
+with tf.Session() as sess:
+    # Initialize all variables
+    sess.run(tf.global_variables_initializer())
 
-#     f.write('\t%s\n\t%s\n' % (split_state[i], final_perf))
-# f.close()
-# exit()
+    # Debug: Check the initialized variables
+    print("All variables:", [v.name for v in tf.global_variables()])
+
+    for i, users_to_test in enumerate(users_to_test_list):
+        ret = test(sess, model, users_to_test, drop_flag=False, batch_test_flag=batch_test_flag)
+        #iterates over the sparsity splits (users_to_test_list) and evaluates the model on each group of users 
+        print('iterating: {i}')
+        final_perf = "recall=[%s], precision=[%s], hit=[%s], ndcg=[%s]" % \
+                        ('\t'.join(['%.5f' % r for r in ret['recall']]),
+                        '\t'.join(['%.5f' % r for r in ret['precision']]),
+                        '\t'.join(['%.5f' % r for r in ret['hit_ratio']]),
+                        '\t'.join(['%.5f' % r for r in ret['ndcg']]))
+        print(final_perf)
+        #formats and prints results 
+
+        f.write('\t%s\n\t%s\n' % (split_state[i], final_perf))
+        #writes result to file 
+f.close()
+exit()
+
+print('final performance done')
 
 """
 *********************************************************

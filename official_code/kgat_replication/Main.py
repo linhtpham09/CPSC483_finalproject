@@ -42,8 +42,20 @@ from utility.parser import parse_args
 args = parse_args()
 print(args)
 
-os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
-print('gpu set')
+# os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+# print('gpu set')
+
+
+# Check for GPU (MPS)
+gpu_devices = tf.config.list_physical_devices('GPU')
+if gpu_devices:
+    print("Using GPU:", gpu_devices)
+else:
+    print("No GPU available. Running on CPU.")
+
+
+
+
 """
 *********************************************************
 Load Data from data_generator function.

@@ -41,9 +41,35 @@
 #     ret = test(sess, model, users_to_test, drop_flag=False, batch_test_flag=batch_test_flag)
 
 
-import torch
+# import tensorflow as tf
 
-if torch.cuda.is_available():
-    print(f"GPU is available: {torch.cuda.get_device_name(0)}")
+# print("TensorFlow version:", tf.__version__)
+# print("GPU devices:", tf.config.list_physical_devices('GPU'))
+
+# # Perform a small computation
+# a = tf.constant([[1.0, 2.0], [3.0, 4.0]])
+# b = tf.matmul(a, a)
+# print("Result:", b)
+
+
+# import torch
+
+# # Use Metal (MPS) if available, otherwise fallback to CPU
+# device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+# print(f"Using device: {device}")
+
+# Move your model and data to the selected device
+# model = model.to(device)
+# data = data.to(device)
+
+import tensorflow as tf
+
+# Check TensorFlow version
+print("TensorFlow version:", tf.__version__)
+
+# Check for GPU devices
+gpu_devices = tf.config.list_physical_devices('GPU')
+if gpu_devices:
+    print("Available GPU devices:", gpu_devices)
 else:
-    print("GPU is not available. Using CPU.")
+    print("No GPU devices available. Running on CPU.")

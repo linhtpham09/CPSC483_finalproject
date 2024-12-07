@@ -32,7 +32,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='CF Embedding size.')
     parser.add_argument('--lr', type=float, default=0.0001,
                         help='Learning rate.')
-    parser.add_argument('--epoch', type=int, default=1000,
+    parser.add_argument('--epoch', type=int, default=100, #paper uses 1000 epochs, but we don't have enough time
                         help='Number of epoch.')
     parser.add_argument('--verbose', type=int, default=50,
                         help='Interval of evaluation.')

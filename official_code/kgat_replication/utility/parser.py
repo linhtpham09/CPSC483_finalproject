@@ -57,7 +57,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
 
     parser.add_argument('--weights_path', nargs='?', default='',
                         help='Store model path.')
-    parser.add_argument('--data_path', nargs='?', default='/Users/linhpham/Desktop/class/CS_483/CPSC483_finalproject/official_code/kgat_replication/data/',
+    parser.add_argument('--data_path', nargs='?', default='data/',
                         help='Input data path.')
     parser.add_argument('--proj_path', nargs='?', default='',
                         help='Project path.')

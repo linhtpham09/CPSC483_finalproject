@@ -42,16 +42,9 @@ from utility.parser import parse_args
 args = parse_args()
 print(args)
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
-# print('gpu set')
+os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+print('gpu set')
 
-
-# Check for GPU (MPS)
-gpu_devices = tf.config.list_physical_devices('GPU')
-if gpu_devices:
-    print("Using GPU:", gpu_devices)
-else:
-    print("No GPU available. Running on CPU.")
 
 
 
@@ -168,7 +161,8 @@ with tf.Session() as sess:
     for i, users_to_test in enumerate(users_to_test_list):
         ret = test(sess, model, users_to_test, drop_flag=False, batch_test_flag=batch_test_flag)
         #iterates over the sparsity splits (users_to_test_list) and evaluates the model on each group of users 
-        print('iterating: {i}')
+        print(f'Iteration {i+1}/{len(users_to_test_list)}')  # Displays the current iteration and total iterations
+    
         final_perf = "recall=[%s], precision=[%s], hit=[%s], ndcg=[%s]" % \
                         ('\t'.join(['%.5f' % r for r in ret['recall']]),
                         '\t'.join(['%.5f' % r for r in ret['precision']]),

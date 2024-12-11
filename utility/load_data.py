@@ -20,7 +20,7 @@ class Data(object):
         test_file = args.data_path + args.dataset +'/test.txt'
 
         kg_file = args.data_path + args.dataset + '/kg_final.txt'
-        print('read in files')
+        print('pathways read')
 
         # ----------get number of users and items & then load rating data from train_file & test_file------------.
         self.n_train, self.n_test = 0, 0
@@ -30,6 +30,7 @@ class Data(object):
         self.test_data, self.test_user_dict = self._load_ratings(test_file)
         self.exist_users = self.train_user_dict.keys()
         self._statistic_ratings()
+        print('read in files')
 
         # ----------get number of entities and relations & then load kg data from kg_file ------------.
         self.n_relations, self.n_entities, self.n_triples = 0, 0, 0
@@ -40,6 +41,26 @@ class Data(object):
         #self._print_data_info()
 
     # reading train & test interaction data.
+    # def _load_ratings(self, file_name):
+    #     user_dict = dict()
+    #     inter_mat = list()
+
+    #     lines = open(file_name, 'r').readlines()
+    #     for l in lines:
+    #         tmps = l.strip()
+    #         inters = [int(i) for i in tmps.split(' ')]
+
+    #         u_id, pos_ids = inters[0], inters[1:]
+    #         pos_ids = list(set(pos_ids))
+
+    #         for i_id in pos_ids:
+    #             inter_mat.append([u_id, i_id])
+
+    #         if len(pos_ids) > 0:
+    #             user_dict[u_id] = pos_ids
+    #     return np.array(inter_mat), user_dict
+
+
     def _load_ratings(self, file_name):
         user_dict = dict()
         inter_mat = list()
@@ -47,6 +68,7 @@ class Data(object):
         lines = open(file_name, 'r').readlines()
         for l in lines:
             tmps = l.strip()
+            tmps = tmps.replace('"', '')
             inters = [int(i) for i in tmps.split(' ')]
 
             u_id, pos_ids = inters[0], inters[1:]
@@ -58,7 +80,7 @@ class Data(object):
             if len(pos_ids) > 0:
                 user_dict[u_id] = pos_ids
         return np.array(inter_mat), user_dict
-
+    
     def _statistic_ratings(self):
         self.n_users = max(max(self.train_data[:, 0]), max(self.test_data[:, 0])) + 1
         self.n_items = max(max(self.train_data[:, 1]), max(self.test_data[:, 1])) + 1

@@ -169,11 +169,11 @@ class KGAT(object):
         if self.alg_type in ['bi', 'kgat']:
             self.ua_embeddings, self.ea_embeddings = self._create_bi_interaction_embed()
 
-        elif self.alg_type in ['gcn']:
-            self.ua_embeddings, self.ea_embeddings = self._create_gcn_embed()
+        # elif self.alg_type in ['gcn']:
+        #     self.ua_embeddings, self.ea_embeddings = self._create_gcn_embed()
 
-        elif self.alg_type in ['graphsage']:
-            self.ua_embeddings, self.ea_embeddings = self._create_graphsage_embed()
+        # elif self.alg_type in ['graphsage']:
+        #     self.ua_embeddings, self.ea_embeddings = self._create_graphsage_embed()
         else:
             print('please check the the alg_type argument, which should be bi, kgat, gcn, or graphsage.')
             raise NotImplementedError
@@ -317,66 +317,66 @@ class KGAT(object):
         ua_embeddings, ea_embeddings = tf.split(all_embeddings, [self.n_users, self.n_entities], 0)
         return ua_embeddings, ea_embeddings
 
-    def _create_gcn_embed(self):
-        A = self.A_in
-        # Generate a set of adjacency sub-matrix.
-        A_fold_hat = self._split_A_hat(A)
+    # def _create_gcn_embed(self):
+    #     A = self.A_in
+    #     # Generate a set of adjacency sub-matrix.
+    #     A_fold_hat = self._split_A_hat(A)
 
-        embeddings = tf.concat([self.weights['user_embed'], self.weights['entity_embed']], axis=0)
-        all_embeddings = [embeddings]
+    #     embeddings = tf.concat([self.weights['user_embed'], self.weights['entity_embed']], axis=0)
+    #     all_embeddings = [embeddings]
 
-        for k in range(0, self.n_layers):
-            # A_hat_drop = tf.nn.dropout(A_hat, 1 - self.node_dropout[k], [self.n_users + self.n_items, 1])
-            temp_embed = []
-            for f in range(self.n_fold):
-                temp_embed.append(tf.sparse_tensor_dense_matmul(A_fold_hat[f], embeddings))
+    #     for k in range(0, self.n_layers):
+    #         # A_hat_drop = tf.nn.dropout(A_hat, 1 - self.node_dropout[k], [self.n_users + self.n_items, 1])
+    #         temp_embed = []
+    #         for f in range(self.n_fold):
+    #             temp_embed.append(tf.sparse_tensor_dense_matmul(A_fold_hat[f], embeddings))
 
-            embeddings = tf.concat(temp_embed, 0)
-            embeddings = tf.nn.leaky_relu(
-                tf.matmul(embeddings, self.weights['W_gc_%d' % k]) + self.weights['b_gc_%d' % k])
-            embeddings = tf.nn.dropout(embeddings, 1 - self.mess_dropout[k])
+    #         embeddings = tf.concat(temp_embed, 0)
+    #         embeddings = tf.nn.leaky_relu(
+    #             tf.matmul(embeddings, self.weights['W_gc_%d' % k]) + self.weights['b_gc_%d' % k])
+    #         embeddings = tf.nn.dropout(embeddings, 1 - self.mess_dropout[k])
 
-            # normalize the distribution of embeddings.
-            norm_embeddings = tf.math.l2_normalize(embeddings, axis=1)
+    #         # normalize the distribution of embeddings.
+    #         norm_embeddings = tf.math.l2_normalize(embeddings, axis=1)
 
-            all_embeddings += [norm_embeddings]
+    #         all_embeddings += [norm_embeddings]
 
-        all_embeddings = tf.concat(all_embeddings, 1)
+    #     all_embeddings = tf.concat(all_embeddings, 1)
 
-        ua_embeddings, ea_embeddings = tf.split(all_embeddings, [self.n_users, self.n_entities], 0)
-        return ua_embeddings, ea_embeddings
+    #     ua_embeddings, ea_embeddings = tf.split(all_embeddings, [self.n_users, self.n_entities], 0)
+    #     return ua_embeddings, ea_embeddings
 
-    def _create_graphsage_embed(self):
-        A = self.A_in
-        # Generate a set of adjacency sub-matrix.
-        A_fold_hat = self._split_A_hat(A)
+    # def _create_graphsage_embed(self):
+    #     A = self.A_in
+    #     # Generate a set of adjacency sub-matrix.
+    #     A_fold_hat = self._split_A_hat(A)
 
-        pre_embeddings = tf.concat([self.weights['user_embed'], self.weights['entity_embed']], axis=0)
+    #     pre_embeddings = tf.concat([self.weights['user_embed'], self.weights['entity_embed']], axis=0)
 
-        all_embeddings = [pre_embeddings]
-        for k in range(self.n_layers):
-            # line 1 in algorithm 1 [RM-GCN, KDD'2018], aggregator layer: weighted sum
-            temp_embed = []
-            for f in range(self.n_fold):
-                temp_embed.append(tf.sparse_tensor_dense_matmul(A_fold_hat[f], pre_embeddings))
-            embeddings = tf.concat(temp_embed, 0)
+    #     all_embeddings = [pre_embeddings]
+    #     for k in range(self.n_layers):
+    #         # line 1 in algorithm 1 [RM-GCN, KDD'2018], aggregator layer: weighted sum
+    #         temp_embed = []
+    #         for f in range(self.n_fold):
+    #             temp_embed.append(tf.sparse_tensor_dense_matmul(A_fold_hat[f], pre_embeddings))
+    #         embeddings = tf.concat(temp_embed, 0)
 
-            # line 2 in algorithm 1 [RM-GCN, KDD'2018], aggregating the previsou embeddings
-            embeddings = tf.concat([pre_embeddings, embeddings], 1)
-            pre_embeddings = tf.nn.relu(
-                tf.matmul(embeddings, self.weights['W_mlp_%d' % k]) + self.weights['b_mlp_%d' % k])
+    #         # line 2 in algorithm 1 [RM-GCN, KDD'2018], aggregating the previsou embeddings
+    #         embeddings = tf.concat([pre_embeddings, embeddings], 1)
+    #         pre_embeddings = tf.nn.relu(
+    #             tf.matmul(embeddings, self.weights['W_mlp_%d' % k]) + self.weights['b_mlp_%d' % k])
 
-            pre_embeddings = tf.nn.dropout(pre_embeddings, 1 - self.mess_dropout[k])
+    #         pre_embeddings = tf.nn.dropout(pre_embeddings, 1 - self.mess_dropout[k])
 
-            # normalize the distribution of embeddings.
-            norm_embeddings = tf.math.l2_normalize(embeddings, axis=1)
+    #         # normalize the distribution of embeddings.
+    #         norm_embeddings = tf.math.l2_normalize(embeddings, axis=1)
 
-            all_embeddings += [norm_embeddings]
+    #         all_embeddings += [norm_embeddings]
 
-        all_embeddings = tf.concat(all_embeddings, 1)
+    #     all_embeddings = tf.concat(all_embeddings, 1)
 
-        ua_embeddings, ea_embeddings = tf.split(all_embeddings, [self.n_users, self.n_entities], 0)
-        return ua_embeddings, ea_embeddings
+    #     ua_embeddings, ea_embeddings = tf.split(all_embeddings, [self.n_users, self.n_entities], 0)
+    #     return ua_embeddings, ea_embeddings
 
     def _split_A_hat(self, X):
         A_fold_hat = []
@@ -425,6 +425,7 @@ class KGAT(object):
         # r_e = tf.math.l2_normalize(r_e, axis=1)
         # t_e = tf.math.l2_normalize(t_e, axis=1)
 
+        "Knowledge Aware Attention Mechanism"
         kg_score = tf.reduce_sum(tf.multiply(t_e, tf.tanh(h_e + r_e)), 1)
 
         return kg_score

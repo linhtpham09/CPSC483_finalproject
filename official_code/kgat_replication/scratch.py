@@ -62,14 +62,16 @@
 # model = model.to(device)
 # data = data.to(device)
 
-import tensorflow as tf
+# import tensorflow as tf
 
-# Check TensorFlow version
-print("TensorFlow version:", tf.__version__)
+# # Check TensorFlow version
+# print("TensorFlow version:", tf.__version__)
 
-# Check for GPU devices
-gpu_devices = tf.config.list_physical_devices('GPU')
-if gpu_devices:
-    print("Available GPU devices:", gpu_devices)
-else:
-    print("No GPU devices available. Running on CPU.")
+# # Check for GPU devices
+# gpu_devices = tf.config.list_physical_devices('GPU')
+# if gpu_devices:
+#     print("Available GPU devices:", gpu_devices)
+# else:
+#     print("No GPU devices available. Running on CPU.")
+
+

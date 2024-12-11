@@ -89,11 +89,30 @@ Purpose: Define KGAT architecture and training logic
 
 Functions:
 - _build_weights: Initialize embeddings for users, items, entities, and relations
-- _build_model_phase_II: Implements TransR to map entitites and relations into relation-specific spaces
+- _build_model_phase_II: Atttention mechanism/Implements TransR to map entitites and relations into relation-specific spaces
 - _build_loss_phase_II: Optimize KG embeddings with BPR loss 
 
 
-Attention functions that we'll need to keep track of: 
+In ``_build_model_phase_I``: User-Item Interaction Graph ``_create_bi_interaction_embed`` -> higher order propagation, outputs two embeddings. One for users and one for entities. Aggregates neighbors in the user-item graph. The learned embeddings are passed to Phase II. 
+
+### Attention Mechanism in KGAT 
+
+The steps for KGAT attention is as follows: 
+1. Attention computation: $\pi(h_i, r_{ij}, h_j) = (W_r h_j)^T tanh(W_r h_i  + r_{ij})$
+2. Softmax: $a_{ij} = softmax(\pi(h_A, r_{AB}, h_B))$
+
+The respective functions for each is 
+In ``_build_model_phase_II`` : Knowledge-aware attention 
+1. ``_generate_transE_score(h = self.h, t = self.pos_t, self.r)`` -> done for every h,r,t 
+2. ``_create_attentive_A_out()`` -> softmax for adjacency matrix 
+
+**High-Order Propagation in Knowledge Graph** 
+happens during Phase II via ``_create_attentive_A_out`` and subsequent adjacency matrix based updates (``A_out``)
+
+```python 
+    A = tf.sparse.softmax(tf.SparseTensor(indices, self.A_values, self.A_in.shape))
+```
+
 
 
 ## 3. Evaluate Model 

@@ -1,0 +1,6 @@
+*.txt
+*.csv
+*.npz
+*.pyc
+*.DS_Store
+sparsity.split

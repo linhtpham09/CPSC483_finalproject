@@ -23,7 +23,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
     parser.add_argument('--alg_type', nargs='?', default='bi',
                         help='Specify the type of the graph convolutional layer from {bi, gcn, graphsage}.')
     parser.add_argument('--dataset', nargs='?', default='amazon-book',
-                        help='Choose a dataset from {yelp2018, last-fm, amazon-book}')
+                        help='Choose a dataset from {yelp2018, last-fm, amazon-book,taobao}')
     parser.add_argument('--regs', nargs='?', default='[1e-5,1e-5,1e-2]',
                         help='Regularization for user and item embeddings.')
     parser.add_argument('--layer_size', nargs='?', default='[64,32,16]',

@@ -3,4 +3,5 @@
 *.npz
 *.pyc
 *.DS_Store
+*.zip
 sparsity.split

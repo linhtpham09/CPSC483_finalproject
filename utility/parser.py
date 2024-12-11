@@ -40,7 +40,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='0: Disable model saver, 1: Activate model saver')
     parser.add_argument('--pretrain', type=int, default=-1,
                         help='0: No pretrain, -1: Pretrain with the learned embeddings, 1:Pretrain with stored models.')
-    parser.add_argument('--batch_size', type=int, default=1024,
+    parser.add_argument('--batch_size', type=int, default=128,
                         help='CF batch size.')
     parser.add_argument('--node_dropout', nargs='?', default='[0.1]',
                         help='Keep probability w.r.t. node dropout (i.e., 1-dropout_ratio) for each deep layer. 1: no dropout.')
@@ -63,7 +63,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='Project path.')
     parser.add_argument('--kge_size', type=int, default=64,
                         help='KG Embedding size.')
-    parser.add_argument('--batch_size_kg', type=int, default=2048,
+    parser.add_argument('--batch_size_kg', type=int, default=128,
                         help='KG batch size.')
     parser.add_argument('--adj_type', nargs='?', default='si',
                         help='Specify the type of the adjacency (laplacian) matrix from {bi, si}.')

@@ -4,177 +4,212 @@ Tensorflow Implementation of Knowledge Graph Attention Network (KGAT) model in:
 Wang Xiang et al. KGAT: Knowledge Graph Attention Network for Recommendation. In KDD 2019.
 @author: Xiang Wang (xiangwang@u.nus.edu)
 '''
+import tensorflow as tf
 from tensorflow import compat as ttf
 tf=ttf.v1
 tf.disable_v2_behavior()
-import numpy as np 
+import numpy as np
+import os
+import sys
+from time import time
+
 from utility.loader_kgat import KGAT_loader
 from utility.helper import *
 from utility.batch_test import *
-from time import time
-
 from utility.KGAT import KGAT
-print('initial loaded')
+from utility.parser import parse_args
 
-import os
-import sys
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
+# Suppress TensorFlow logs
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+# Set GPU device visibility based on argument
+args = parse_args()
+os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
+
+# Check GPU availability
+gpus = tf.config.list_physical_devices('GPU')
+print("Num GPUs Available:", len(gpus))
+if gpus:
+    try:
+        # Set GPU memory growth to avoid pre-allocating memory
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        print(f"Using GPU: {gpus}")
+    except RuntimeError as e:
+        print(f"Error setting up GPU: {e}")
+else:
+    print("No GPUs detected. Running on CPU.")
+
+# Set random seed
+np.random.seed(2019)
+tf.compat.v1.set_random_seed(2019)
+
+print('Initial libraries loaded')
+
+# Function to load pretrained data
 def load_pretrained_data(args):
     pre_model = 'mf'
     if args.pretrain == -2:
         pre_model = 'kgat'
-    pretrain_path = 'data/mf.npz' 
+    pretrain_path = 'data/' + args.dataset + '/mf.npz'
     try:
         pretrain_data = np.load(pretrain_path)
-        print('load the pretrained bprmf model parameters.')
-    except Exception:
+        print('Loaded the pretrained BPRMF model parameters.')
+    except Exception as e:
+        print(f"Error loading pretrained data: {e}")
         pretrain_data = None
     return pretrain_data
 
-print('libraries loaded')
+print('Additional libraries loaded')
 
-tf.random.get_seed(2019)
-np.random.seed(2019)
-
-
-from utility.parser import parse_args 
-args = parse_args()
+# Display parsed arguments
 print(args)
+args.batch_size = 128  # Reduce batch size
 
-os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
-print('gpu set')
+# Configure GPU memory growth
+physical_devices = tf.config.list_physical_devices('GPU')
+if physical_devices:
+    for gpu in physical_devices:
+        tf.config.experimental.set_memory_growth(gpu, True)
 
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+
 """
 *********************************************************
 Load Data from data_generator function.
 # """
 
-# data_generator = KGAT_loader(args, path = 'data')
+data_generator = KGAT_loader(args, path = 'data')
+print('data generator: ', data_generator)
 
-# print('data generator created')
-# config = dict()
-# config['n_users'] = data_generator.n_users
-# config['n_items'] = data_generator.n_items
-# config['n_relations'] = data_generator.n_relations
-# config['n_entities'] = data_generator.n_entities
+print('data generator created')
+config = dict()
+config['n_users'] = data_generator.n_users
+config['n_items'] = data_generator.n_items
+config['n_relations'] = data_generator.n_relations
+config['n_entities'] = data_generator.n_entities
 
 
-# "Load the laplacian matrix."
-# config['A_in'] = sum(data_generator.lap_list)
+"Load the laplacian matrix."
+config['A_in'] = sum(data_generator.lap_list)
 
-# "Load the KG triplets."
-# config['all_h_list'] = data_generator.all_h_list
-# config['all_r_list'] = data_generator.all_r_list
-# config['all_t_list'] = data_generator.all_t_list
-# config['all_v_list'] = data_generator.all_v_list
-# print('config created')
+"Load the KG triplets."
+config['all_h_list'] = data_generator.all_h_list
+config['all_r_list'] = data_generator.all_r_list
+config['all_t_list'] = data_generator.all_t_list
+config['all_v_list'] = data_generator.all_v_list
+print('config created',  np.dtype(config))
+print(config)
 
-# """
-# *********************************************************
-# Use the pretrained data to initialize the embeddings.
-# """
-# pretrain_data = load_pretrained_data(args)
 
-# print("pretrain_data loaded")
+# Debug memory allocations
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+run_options = tf.compat.v1.RunOptions(report_tensor_allocations_upon_oom=True)
 
-# """
-# *********************************************************
-# Select one of the models.
-# """
+"""
+*********************************************************
+Use the pretrained data to initialize the embeddings.
+"""
+pretrain_data = load_pretrained_data(args)
 
-# model = KGAT(data_config=config, pretrain_data=pretrain_data, args=args)
+print("pretrain_data loaded")
 
-# saver = tf.train.Saver() 
-# print('model and saver created')
+"""
+*********************************************************
+Select one of the models.
+"""
 
-# """
-# *********************************************************
-# Save the model parameters.
-# """
+model = KGAT(data_config=config, pretrain_data=pretrain_data, args=args)
 
-# layer = '-'.join([str(l) for l in eval(args.layer_size)])
-# weights_save_path = 'data/weights/'
-# ensureDir(weights_save_path)
-# save_saver = tf.train.Saver(max_to_keep=1)
+saver = tf.train.Saver() 
+print('model and saver created')
 
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
-# sess = tf.Session(config=config)
+"""
+*********************************************************
+Save the model parameters.
+"""
 
-# print('sessions saved')
-# """
-# *********************************************************
-# Reload the model parameters to fine tune.
-# """
+layer = '-'.join([str(l) for l in eval(args.layer_size)])
+weights_save_path = 'data/' + args.dataset +'/weights/'
+ensureDir(weights_save_path)
+save_saver = tf.train.Saver(max_to_keep=1)
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config=config)
+
+print('sessions saved')
+"""
+*********************************************************
+Reload the model parameters to fine tune.
+"""
 
     
-# layer = '-'.join([str(l) for l in eval(args.layer_size)])
-# pretrain_path = '%sweights/%s/%s/%s/l%s_r%s' % (
-#     args.weights_path, args.dataset, model.model_type, layer, str(args.lr), '-'.join([str(r) for r in eval(args.regs)]))
+layer = '-'.join([str(l) for l in eval(args.layer_size)])
+pretrain_path = '%sweights/%s/%s/%s/l%s_r%s' % (
+    args.weights_path, args.dataset, model.model_type, layer, str(args.lr), '-'.join([str(r) for r in eval(args.regs)]))
 
-# ckpt = tf.train.get_checkpoint_state(os.path.dirname(pretrain_path + '/checkpoint'))
-# if ckpt and ckpt.model_checkpoint_path:
-#     sess.run(tf.global_variables_initializer())
-#     saver.restore(sess, ckpt.model_checkpoint_path)
-#     print('load the pretrained model parameters from: ', pretrain_path)
+ckpt = tf.train.get_checkpoint_state(os.path.dirname(pretrain_path + '/checkpoint'))
+if ckpt and ckpt.model_checkpoint_path:
+    sess.run(tf.global_variables_initializer())
+    saver.restore(sess, ckpt.model_checkpoint_path)
+    print('load the pretrained model parameters from: ', pretrain_path)
 
-# print('reloaded')
-# """
-# *********************************************************
-# Get the final performance w.r.t. different sparsity levels.
-# Evaluates the pre trained model
-# """
+print('reloaded')
+"""
+*********************************************************
+Get the final performance w.r.t. different sparsity levels.
+Evaluates the pre trained model
+"""
 
-# assert args.test_flag == 'full' #full evaluation of users in thetest set 
-# users_to_test_list, split_state = data_generator.get_sparsity_split() 
-# #users_to_test_list: a list where each element contains users grouped by 
-# #their sparsity level
-# #split_state: a list of corresponding labels for these groups 
-# print('users_to_test_list and split_state loaded')
+assert args.test_flag == 'full' #full evaluation of users in thetest set 
+users_to_test_list, split_state = data_generator.get_sparsity_split() 
+#users_to_test_list: a list where each element contains users grouped by 
+#their sparsity level
+#split_state: a list of corresponding labels for these groups 
+print('users_to_test_list and split_state loaded')
 
-# users_to_test_list.append(list(data_generator.test_user_dict.keys()))
-# split_state.append('all')
-# #adds all test users (test_user_dict.keys()) to the list 
-# print('appended')
+users_to_test_list.append(list(data_generator.test_user_dict.keys()))
+split_state.append('all')
+#adds all test users (test_user_dict.keys()) to the list 
+print('appended')
 
-# save_path = '%sreport/%s/%s.result' % (args.proj_path, args.dataset, model.model_type)
-# ensureDir(save_path)
-# f = open(save_path, 'w')
-# #sets up save path 
-# print('sets up save path')
+save_path = '%sreport/%s/%s.result' % (args.proj_path, args.dataset, model.model_type)
+ensureDir(save_path)
+f = open(save_path, 'w')
+#sets up save path 
+print('sets up save path')
 
-# f.write('embed_size=%d, lr=%.4f, regs=%s, loss_type = %s, \n' % (args.embed_size, args.lr, args.regs, args.loss_type))
-# #configuration info 
-# print('config info')
+f.write('embed_size=%d, lr=%.4f, regs=%s, loss_type = %s, \n' % (args.embed_size, args.lr, args.regs, args.loss_type))
+#configuration info 
+print('config info')
 
-# with tf.Session() as sess:
-#     # Initialize all variables
-#     sess.run(tf.global_variables_initializer())
+with tf.Session() as sess:
+    # Initialize all variables
+    sess.run(tf.global_variables_initializer())
 
-#     # Debug: Check the initialized variables
-#     print("All variables:", [v.name for v in tf.global_variables()])
+    # Debug: Check the initialized variables
+    print("All variables:", [v.name for v in tf.global_variables()])
 
-#     for i, users_to_test in enumerate(users_to_test_list):
-#         ret = test(sess, model, users_to_test, drop_flag=False, batch_test_flag=batch_test_flag)
-#         #iterates over the sparsity splits (users_to_test_list) and evaluates the model on each group of users 
-#         print(f'Iteration {i+1}/{len(users_to_test_list)}')  # Displays the current iteration and total iterations
+    for i, users_to_test in enumerate(users_to_test_list):
+        ret = test(sess, model, users_to_test, drop_flag=False, batch_test_flag=batch_test_flag)
+        #iterates over the sparsity splits (users_to_test_list) and evaluates the model on each group of users 
+        print(f'Iteration {i+1}/{len(users_to_test_list)}')  # Displays the current iteration and total iterations
     
-#         final_perf = "recall=[%s], precision=[%s], hit=[%s], ndcg=[%s]" % \
-#                         ('\t'.join(['%.5f' % r for r in ret['recall']]),
-#                         '\t'.join(['%.5f' % r for r in ret['precision']]),
-#                         '\t'.join(['%.5f' % r for r in ret['hit_ratio']]),
-#                         '\t'.join(['%.5f' % r for r in ret['ndcg']]))
-#         print(final_perf)
-#         #formats and prints results 
+        final_perf = "recall=[%s], precision=[%s], hit=[%s], ndcg=[%s]" % \
+                        ('\t'.join(['%.5f' % r for r in ret['recall']]),
+                        '\t'.join(['%.5f' % r for r in ret['precision']]),
+                        '\t'.join(['%.5f' % r for r in ret['hit_ratio']]),
+                        '\t'.join(['%.5f' % r for r in ret['ndcg']]))
+        print(final_perf)
+        #formats and prints results 
 
-#         f.write('\t%s\n\t%s\n' % (split_state[i], final_perf))
-#         #writes result to file 
-# f.close()
+        f.write('\t%s\n\t%s\n' % (split_state[i], final_perf))
+        #writes result to file 
+f.close()
 # #exit()
 
-# print('final performance done')
+print('final performance done')
 # """
 # *********************************************************
 # Train.

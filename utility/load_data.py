@@ -16,10 +16,10 @@ class Data(object):
 
         self.batch_size = args.batch_size
 
-        train_file = args.data_path + args.dataset + '/train.txt'
-        test_file = args.data_path + args.dataset +'/test.txt'
+        train_file = args.data_path + '/train.txt'
+        test_file = args.data_path  +'/test.txt'
 
-        kg_file = args.data_path + args.dataset + '/kg_final.txt'
+        kg_file = args.data_path + '/kg_final.txt'
         print('pathways read')
 
         # ----------get number of users and items & then load rating data from train_file & test_file------------.

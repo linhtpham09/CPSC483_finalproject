@@ -4,6 +4,15 @@ Tensorflow Implementation of Knowledge Graph Attention Network (KGAT) model in:
 Wang Xiang et al. KGAT: Knowledge Graph Attention Network for Recommendation. In KDD 2019.
 @author: Xiang Wang (xiangwang@u.nus.edu)
 '''
+from tensorflow.keras.mixed_precision import set_global_policy
+
+# Set the policy to mixed precision
+set_global_policy('mixed_float16')
+
+# Verify the current policy
+from tensorflow.keras.mixed_precision import global_policy
+print(f"Current global policy: {global_policy()}")
+
 import tensorflow as tf
 from tensorflow import compat as ttf
 tf=ttf.v1
@@ -12,14 +21,13 @@ import numpy as np
 import os
 import sys
 from time import time
-
 from utility.loader_kgat import KGAT_loader
 from utility.helper import *
 from utility.batch_test import *
 from utility.KGAT import KGAT
 from utility.parser import parse_args
-
 import os
+
 os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
 
 # Suppress TensorFlow logs
@@ -67,7 +75,6 @@ print('Additional libraries loaded')
 
 # Display parsed arguments
 print(args)
-args.batch_size = 128  # Reduce batch size
 
 # Configure GPU memory growth
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -227,7 +234,7 @@ Trains the KGAT Model by
 """
 # Create a persistent session
 
-print("Loaded pretrain_data:", pretrain_data.keys() if pretrain_data else "No pretrain_data found.")
+#print("Loaded pretrain_data:", pretrain_data.keys() if pretrain_data else "No pretrain_data found.")
 
 # Create a session
 config = tf.ConfigProto()
@@ -237,17 +244,17 @@ sess = tf.Session(config=config)
 # Initialize variables
 sess.run(tf.global_variables_initializer())
 
-# Skip checkpoint restoration if pretrain_data is used
-if pretrain_data is not None:
-    print("Using pretrain_data for initialization.")
-else:
+# # Skip checkpoint restoration if pretrain_data is used
+# if pretrain_data is not None:
+#     print("Using pretrain_data for initialization.")
+# else:
     # Attempt to restore from checkpoint
-    ckpt = tf.train.get_checkpoint_state(pretrain_path)
-    if ckpt and ckpt.model_checkpoint_path:
-        saver.restore(sess, ckpt.model_checkpoint_path)
-        print("Pre-trained model restored from:", ckpt.model_checkpoint_path)
-    else:
-        print("No checkpoint found. Starting from scratch.")
+ckpt = tf.train.get_checkpoint_state(pretrain_path)
+if ckpt and ckpt.model_checkpoint_path:
+    saver.restore(sess, ckpt.model_checkpoint_path)
+    print("Pre-trained model restored from:", ckpt.model_checkpoint_path)
+else:
+    print("No checkpoint found. Starting from scratch.")
 
 print("-----------------------------------------------------------------")
 print("Starting Training!")
@@ -273,6 +280,8 @@ for epoch in range(args.epoch):
         print(f'index: {idx}, {idx/n_batch}')
         batch_data = data_generator.generate_train_batch()
         feed_dict = data_generator.generate_train_feed_dict(model, batch_data)
+        
+        #training step 
         _, batch_loss, batch_base_loss, batch_kge_loss, batch_reg_loss = model.train(sess, feed_dict=feed_dict)
         loss += batch_loss
         base_loss += batch_base_loss
@@ -299,6 +308,7 @@ for epoch in range(args.epoch):
         A_batch_data = data_generator.generate_train_A_batch()
         feed_dict = data_generator.generate_train_A_feed_dict(model, A_batch_data)
         _, batch_loss, batch_kge_loss, batch_reg_loss = model.train_A(sess, feed_dict=feed_dict)
+        
         loss += batch_loss
         kge_loss += batch_kge_loss
         reg_loss += batch_reg_loss
@@ -318,6 +328,9 @@ for epoch in range(args.epoch):
                 epoch, time() - t1, loss, base_loss, kge_loss, reg_loss)
             print(perf_str)
         continue
+        # Periodically save checkpoints
+    if (epoch + 1) % 10 == 0:
+        model.save_weights(f'./model_checkpoint_epoch_{epoch}.ckpt')
 
     """
     *********************************************************

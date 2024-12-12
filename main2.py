@@ -235,7 +235,7 @@ Trains the KGAT Model by
 # Create a persistent session
 
 #print("Loaded pretrain_data:", pretrain_data.keys() if pretrain_data else "No pretrain_data found.")
-
+print("Checkpoint: Training started")
 # Create a session
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True

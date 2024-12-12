@@ -66,7 +66,10 @@ class Data(object):
         inter_mat = list()
 
         lines = open(file_name, 'r').readlines()
-        for l in lines:
+        #num_lines_to_load = int(len(lines)*0.25) # only load in half of data 
+        #print(f'reading in {num_lines_to_load} out of {len(lines)}')
+        #for l in lines[:num_lines_to_load]:
+        for l in lines: 
             tmps = l.strip()
             tmps = tmps.replace('"', '')
             inters = [int(i) for i in tmps.split(' ')]
@@ -79,6 +82,8 @@ class Data(object):
 
             if len(pos_ids) > 0:
                 user_dict[u_id] = pos_ids
+        print(f'len of iter_mat: {len(np.array(inter_mat))}')
+        print(f'len of user_dict: {len(user_dict)}')
         return np.array(inter_mat), user_dict
     
     def _statistic_ratings(self):

@@ -64,7 +64,7 @@ class Data(object):
     def _load_ratings(self, file_name):
         user_dict = dict()
         inter_mat = list()
-
+            
         lines = open(file_name, 'r').readlines()
         #num_lines_to_load = int(len(lines)*0.25) # only load in half of data 
         #print(f'reading in {num_lines_to_load} out of {len(lines)}')

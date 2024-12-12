@@ -239,6 +239,9 @@ print("Checkpoint: Training started")
 # Create a session
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.9  # Optional: Limit memory usage
+
+tf.debugging.set_log_device_placement(True)
 sess = tf.Session(config=config)
 
 # Initialize variables

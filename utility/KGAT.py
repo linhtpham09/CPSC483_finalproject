@@ -409,12 +409,34 @@ class KGAT(object):
         coo = X.tocoo().astype(np.float32)
         indices = np.mat([coo.row, coo.col]).transpose()
         return tf.SparseTensor(indices, coo.data, coo.shape)
+#"================================================================================="
+#"================================================================================="
+#"================================================================================="
+#"=================Attention! This is where we create attention===================="
 
-    def _create_attentive_A_out(self):
+    # def _create_attentive_A_out(self):
+    #     indices = np.mat([self.all_h_list, self.all_t_list]).transpose()
+    #     A = tf.sparse.softmax(tf.SparseTensor(indices, self.A_values, self.A_in.shape))
+    #     return A
+    
+    def _create_attentive_A_out(self): 
         indices = np.mat([self.all_h_list, self.all_t_list]).transpose()
-        A = tf.sparse.softmax(tf.SparseTensor(indices, self.A_values, self.A_in.shape))
-        return A
+        A = tf.SparseTensor(indices, self.A_values, self.A_in.shape)
+        A = tf.sparse.softmax(A)
+        "2 hop attention"
+        alpha = 0.25
+        # Compute the 2-hop attention
+        A_dense = tf.sparse.to_dense(A)  # Convert to dense for certain operations
+        two_hop = tf.matmul(A_dense, A_dense)  # 2-hop attention
 
+        # Combine with alpha coefficients
+        A_out = alpha * tf.ones_like(A_dense) + alpha * (1 - alpha) * A_dense + alpha * (1 - alpha)**2 * two_hop
+
+        print('calculated 2hop attention')
+        return A_out
+#"================================================================================="
+#"================================================================================="
+#"================================================================================="
     def _generate_transE_score(self, h, t, r):
         embeddings = tf.concat([self.weights['user_embed'], self.weights['entity_embed']], axis=0)
         embeddings = tf.expand_dims(embeddings, 1)

@@ -82,6 +82,7 @@ class Data(object):
         return np.array(inter_mat), user_dict
     
     def _statistic_ratings(self):
+        ## rewriting here to identify the number of users and the number of items
         self.n_users = max(max(self.train_data[:, 0]), max(self.test_data[:, 0])) + 1
         self.n_items = max(max(self.train_data[:, 1]), max(self.test_data[:, 1])) + 1
         self.n_train = len(self.train_data)

@@ -276,11 +276,17 @@ class KGAT(object):
 
     def _create_bi_interaction_embed(self):
         A = self.A_in
-        # Generate a set of adjacency sub-matrix.
+        # Generate a set of adjacency sub-matrix
         A_fold_hat = self._split_A_hat(A)
+        print('A_fold_hat created')
+        
+        ## checking the A fold hat dimensions:
+        print(A_fold_hat[1].shape)
 
         ego_embeddings = tf.concat([self.weights['user_embed'], self.weights['entity_embed']], axis=0)
+        print(ego_embeddings.shape)
         all_embeddings = [ego_embeddings]
+        print(f'Embeddings made with shape: {ego_embeddings.shape}')
 
         for k in range(0, self.n_layers):
             # A_hat_drop = tf.nn.dropout(A_hat, 1 - self.node_dropout[k], [self.n_users + self.n_items, 1])
@@ -290,31 +296,36 @@ class KGAT(object):
 
             # sum messages of neighbors.
             side_embeddings = tf.concat(temp_embed, 0)
+            print(f'Side embeddings made with shape: {side_embeddings.shape}')
 
             add_embeddings = ego_embeddings + side_embeddings
+            print(f'Add embeddings with shape: {add_embeddings.shape}')
 
             # transformed sum messages of neighbors.
             sum_embeddings = tf.nn.leaky_relu(
                 tf.matmul(add_embeddings, self.weights['W_gc_%d' % k]) + self.weights['b_gc_%d' % k])
-
+            print(f'Sum embeddings with shape: {sum_embeddings.shape}')
 
             # bi messages of neighbors.
             bi_embeddings = tf.multiply(ego_embeddings, side_embeddings)
+            print(f'Bi embeddings with shape: {bi_embeddings.shape}')
             # transformed bi messages of neighbors.
             bi_embeddings = tf.nn.leaky_relu(
                 tf.matmul(bi_embeddings, self.weights['W_bi_%d' % k]) + self.weights['b_bi_%d' % k])
-
+            print(f'Transformed bi embeddings with shape: {bi_embeddings.shape}')
             ego_embeddings = bi_embeddings + sum_embeddings
+            print(f'Ego embeddings after addition with shape: {ego_embeddings.shape}')
             # message dropout.
             ego_embeddings = tf.nn.dropout(ego_embeddings, 1 - self.mess_dropout[k])
-
+            print(f'Dropout ego embeddings with shape: {ego_embeddings.shape}')
             # normalize the distribution of embeddings.
             norm_embeddings = tf.math.l2_normalize(ego_embeddings, axis=1)
-
+            print(f'Normalized embeddings with shape: {norm_embeddings.shape}')
             all_embeddings += [norm_embeddings]
+            print('added to all embeddings')
 
         all_embeddings = tf.concat(all_embeddings, 1)
-
+        print(f'Final all embeddings shape: {all_embeddings.shape}')
         ua_embeddings, ea_embeddings = tf.split(all_embeddings, [self.n_users, self.n_entities], 0)
         return ua_embeddings, ea_embeddings
 

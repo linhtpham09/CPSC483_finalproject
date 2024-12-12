@@ -19,6 +19,11 @@ from utility.batch_test import *
 from utility.KGAT import KGAT
 from utility.parser import parse_args
 
+import os
+
+
+os.environ["TF_GPU_ALLOCATOR"] = "cuda_malloc_async"
+
 # Suppress TensorFlow logs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -28,6 +33,13 @@ os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
 
 # Check GPU availability
 gpus = tf.config.list_physical_devices('GPU')
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 print("Num GPUs Available:", len(gpus))
 if gpus:
     try:
@@ -83,6 +95,8 @@ print('data generator: ', data_generator)
 
 print('data generator created')
 config = dict()
+
+
 config['n_users'] = data_generator.n_users
 config['n_items'] = data_generator.n_items
 config['n_relations'] = data_generator.n_relations
@@ -97,29 +111,30 @@ config['all_h_list'] = data_generator.all_h_list
 config['all_r_list'] = data_generator.all_r_list
 config['all_t_list'] = data_generator.all_t_list
 config['all_v_list'] = data_generator.all_v_list
-print('config created',  np.dtype(config))
-print(config)
+print('config created')
 
+print(f"n_users: {config['n_users']}, n_items: {config['n_items']}, n_relations: {config['n_relations']}, n_entities: {config['n_entities']}")
+print(f"A_in shape: {config['A_in'].shape}")
 
 # Debug memory allocations
-config = tf.compat.v1.ConfigProto()
-config.gpu_options.allow_growth = True
+tf_config = tf.compat.v1.ConfigProto()
+tf_config.gpu_options.allow_growth = True
 run_options = tf.compat.v1.RunOptions(report_tensor_allocations_upon_oom=True)
 
 """
 *********************************************************
 Use the pretrained data to initialize the embeddings.
 """
-pretrain_data = load_pretrained_data(args)
+# pretrain_data = load_pretrained_data(args)
 
-print("pretrain_data loaded")
+# print("pretrain_data loaded")
 
 """
 *********************************************************
 Select one of the models.
 """
-
-model = KGAT(data_config=config, pretrain_data=pretrain_data, args=args)
+print(type(config))
+model = KGAT(data_config=config, pretrain_data=None, args=args)
 
 saver = tf.train.Saver() 
 print('model and saver created')

@@ -433,8 +433,16 @@ class KGAT(object):
             )
             
             print('calculated 2-hop attention')
+        elif self.hop == "three": 
+            alpha = 0.25 
+            two_hop = tf.sparse.sparse_dense_matmul(A, tf.sparse.to_dense(A))
+            three_hop = tf.sparse.sparse_dense_matmul(two_hop, tf.sparse.to_dense(A))
+            A = tf.sparse.add(A,
+                alpha * tf.sparse.to_dense(A) + alpha * (1 - alpha)**2 * two_hop + alpha * (1-alpha)**3 * three_hop
+            )
+            print('calculated 3-hop attention')
         else: 
-            print('calculated 1 hop attention')
+            print('calculated 1-hop attention')
         return A
 #"================================================================================="
 #"================================================================================="

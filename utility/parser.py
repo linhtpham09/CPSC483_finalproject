@@ -53,7 +53,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
     parser.add_argument('--loss_type', nargs='?', default='bpr',
                         help='Specify a loss type from {bpr, ce}.')
     parser.add_argument('--hop', nargs='?', default='one',
-                        help='Specify a loss type from {one,two}.')
+                        help='Specify a loss type from {one,two,three}.')
     
 #other defaults not specified 
 

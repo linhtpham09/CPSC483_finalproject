@@ -28,7 +28,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='Regularization for user and item embeddings.')
     parser.add_argument('--layer_size', nargs='?', default='[64,32,16]',
                         help='Output sizes of every layer')
-    parser.add_argument('--embed_size', type=int, default=64,
+    parser.add_argument('--embed_size', type=int, default=32,
                         help='CF Embedding size.')
     parser.add_argument('--lr', type=float, default=0.0001,
                         help='Learning rate.')
@@ -52,6 +52,8 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='whether using knowledge graph embedding')
     parser.add_argument('--loss_type', nargs='?', default='bpr',
                         help='Specify a loss type from {bpr, ce}.')
+    parser.add_argument('--hop', nargs='?', default='one',
+                        help='Specify a loss type from {one,two}.')
     
 #other defaults not specified 
 
@@ -61,7 +63,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='Input data path.')
     parser.add_argument('--proj_path', nargs='?', default='',
                         help='Project path.')
-    parser.add_argument('--kge_size', type=int, default=64,
+    parser.add_argument('--kge_size', type=int, default=32,
                         help='KG Embedding size.')
     parser.add_argument('--batch_size_kg', type=int, default=16,
                         help='KG batch size.')

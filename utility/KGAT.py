@@ -97,6 +97,7 @@ class KGAT(object):
         #########################LP CHANGE HERE! eval() to ast.literal_eval()
         self.regs = ast.literal_eval(args.regs)
         self.verbose = args.verbose
+        self.hop = args.hop
 
     def _build_inputs(self):
         # placeholder definition
@@ -104,8 +105,8 @@ class KGAT(object):
         self.pos_items = tf.placeholder(tf.int32, shape=(None,))
         self.neg_items = tf.placeholder(tf.int32, shape=(None,))
 
-        # for knowledge graph modeling (TransD)
-        self.A_values = tf.placeholder(tf.float32, shape=[len(self.all_v_list)], name='A_values')
+        # for knowledge graph modeling (TransD)-----Linh changed here too! shape from all_v_list 
+        self.A_values = tf.placeholder(tf.float32, shape=[None], name='A_values')
 
         self.h = tf.placeholder(tf.int32, shape=[None], name='h')
         self.r = tf.placeholder(tf.int32, shape=[None], name='r')
@@ -419,21 +420,22 @@ class KGAT(object):
     #     A = tf.sparse.softmax(tf.SparseTensor(indices, self.A_values, self.A_in.shape))
     #     return A
     
-    def _create_attentive_A_out(self): 
+    def _create_attentive_A_out(self):
         indices = np.mat([self.all_h_list, self.all_t_list]).transpose()
         A = tf.SparseTensor(indices, self.A_values, self.A_in.shape)
         A = tf.sparse.softmax(A)
-        "2 hop attention"
-        alpha = 0.25
-        # Compute the 2-hop attention
-        A_dense = tf.sparse.to_dense(A)  # Convert to dense for certain operations
-        two_hop = tf.matmul(A_dense, A_dense)  # 2-hop attention
-
-        # Combine with alpha coefficients
-        A_out = alpha * tf.ones_like(A_dense) + alpha * (1 - alpha) * A_dense + alpha * (1 - alpha)**2 * two_hop
-
-        print('calculated 2hop attention')
-        return A_out
+        if self.hop == 'two': 
+            alpha = 0.25 
+            # Use sparse operations for two-hop computation
+            two_hop = tf.sparse.sparse_dense_matmul(A, tf.sparse.to_dense(A))
+            A = tf.sparse.add(A,
+                alpha * tf.sparse.to_dense(A) + alpha * (1 - alpha)**2 * two_hop
+            )
+            
+            print('calculated 2-hop attention')
+        else: 
+            print('calculated 1 hop attention')
+        return A
 #"================================================================================="
 #"================================================================================="
 #"================================================================================="
@@ -486,37 +488,76 @@ class KGAT(object):
         batch_predictions = sess.run(self.batch_predictions, feed_dict)
         return batch_predictions
 
-    """
-    Update the attentive laplacian matrix.
-    """
     def update_attentive_A(self, sess):
         fold_len = len(self.all_h_list) // self.n_fold
-        kg_score = []
+        rows, cols, values = [], [], []
 
         for i_fold in range(self.n_fold):
             start = i_fold * fold_len
-            if i_fold == self.n_fold - 1:
-                end = len(self.all_h_list)
-            else:
-                end = (i_fold + 1) * fold_len
+            end = len(self.all_h_list) if i_fold == self.n_fold - 1 else (i_fold + 1) * fold_len
 
+            # Prepare indices and feed_dict for this fold
+            chunk_indices = np.mat([self.all_h_list[start:end], self.all_t_list[start:end]]).transpose()
             feed_dict = {
                 self.h: self.all_h_list[start:end],
                 self.r: self.all_r_list[start:end],
-                self.pos_t: self.all_t_list[start:end]
+                self.pos_t: self.all_t_list[start:end],
             }
+
+            # Compute KG scores for this fold
             A_kg_score = sess.run(self.A_kg_score, feed_dict=feed_dict)
-            kg_score += list(A_kg_score)
 
-        kg_score = np.array(kg_score)
+            # Ensure alignment between indices and values
+            if len(A_kg_score) != len(chunk_indices):
+                raise ValueError(
+                    f"Mismatch between A_kg_score ({len(A_kg_score)}) and chunk_indices ({len(chunk_indices)})."
+                )
 
-        new_A = sess.run(self.A_out, feed_dict={self.A_values: kg_score})
-        new_A_values = new_A.values
-        new_A_indices = new_A.indices
+            # Append indices and values to the overall lists
+            rows.extend(self.all_h_list[start:end])
+            cols.extend(self.all_t_list[start:end])
+            values.extend(A_kg_score)
 
-        rows = new_A_indices[:, 0]
-        cols = new_A_indices[:, 1]
-        self.A_in = sp.coo_matrix((new_A_values, (rows, cols)), shape=(self.n_users + self.n_entities,
-                                                                       self.n_users + self.n_entities))
+        # Create sparse adjacency matrix
+        self.A_in = sp.coo_matrix(
+            (values, (rows, cols)),
+            shape=(self.n_users + self.n_entities, self.n_users + self.n_entities)
+        )
         if self.alg_type in ['org', 'gcn']:
-            self.A_in.setdiag(1.)
+            self.A_in.setdiag(1.0)
+
+    """
+    Update the attentive laplacian matrix.
+    """
+    # def update_attentive_A(self, sess):
+    #     fold_len = len(self.all_h_list) // self.n_fold
+    #     kg_score = []
+
+    #     for i_fold in range(self.n_fold):
+    #         start = i_fold * fold_len
+    #         if i_fold == self.n_fold - 1:
+    #             end = len(self.all_h_list)
+    #         else:
+    #             end = (i_fold + 1) * fold_len
+
+    #         feed_dict = {
+    #             self.h: self.all_h_list[start:end],
+    #             self.r: self.all_r_list[start:end],
+    #             self.pos_t: self.all_t_list[start:end]
+    #         }
+    #         A_kg_score = sess.run(self.A_kg_score, feed_dict=feed_dict)
+    #         kg_score += list(A_kg_score)
+
+    #     kg_score = np.array(kg_score)
+
+    #     new_A = sess.run(self.A_out, feed_dict={self.A_values: kg_score})
+    #     new_A_values = new_A.values
+    #     new_A_indices = new_A.indices
+
+    #     rows = new_A_indices[:, 0]
+    #     cols = new_A_indices[:, 1]
+    #     self.A_in = sp.coo_matrix((new_A_values, (rows, cols)), shape=(self.n_users + self.n_entities,
+    #                                                                    self.n_users + self.n_entities))
+    #     if self.alg_type in ['org', 'gcn']:
+    #         self.A_in.setdiag(1.)
+

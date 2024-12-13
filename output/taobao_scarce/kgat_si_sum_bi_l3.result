@@ -1,0 +1,6 @@
+embed_size=32, lr=0.0001, layer_size=[64,32,16], node_dropout=[0.1], mess_dropout=[0.1,0.1,0.1], regs=[1e-5,1e-5,1e-2], adj_type=si, use_att=True, use_kge=True, pretrain=-1
+	Best Iter=[0]@[51.0]	recall=[0.00756	0.01682	0.02681	0.03348	0.04087], precision=[0.00047	0.00054	0.00056	0.00054	0.00052], hit=[0.00941	0.02127	0.03331	0.04209	0.05132], ndcg=[0.00309	0.00549	0.00763	0.00907	0.01052]
+embed_size=32, lr=0.0001, layer_size=[64,32,16], node_dropout=[0.1], mess_dropout=[0.1,0.1,0.1], regs=[1e-5,1e-5,1e-2], adj_type=si, use_att=True, use_kge=True, pretrain=-1
+	Best Iter=[9]@[456.4]	recall=[0.03032	0.05373	0.07378	0.09142	0.10624], precision=[0.00193	0.00172	0.00157	0.00147	0.00137], hit=[0.03793	0.06671	0.09024	0.11251	0.13007], ndcg=[0.01346	0.01940	0.02366	0.02737	0.03023]
+embed_size=32, lr=0.0001, layer_size=[64,32,16], node_dropout=[0.1], mess_dropout=[0.1,0.1,0.1], regs=[1e-5,1e-5,1e-2], adj_type=si, use_att=True, use_kge=True, pretrain=-1
+	Best Iter=[0]@[48.8]	recall=[0.01150	0.02088	0.03054	0.03981	0.04964], precision=[0.00073	0.00068	0.00066	0.00065	0.00065], hit=[0.01457	0.02706	0.03928	0.05123	0.06345], ndcg=[0.00479	0.00731	0.00949	0.01146	0.01337]

@@ -148,19 +148,22 @@ def test_one_user(x):
 def test(sess, model, users_to_test, drop_flag=False, batch_test_flag=False):
     result = {'precision': np.zeros(len(Ks)), 'recall': np.zeros(len(Ks)), 'ndcg': np.zeros(len(Ks)),
               'hit_ratio': np.zeros(len(Ks)), 'auc': 0.}
-
     pool = multiprocessing.Pool(cores)
 
-    if args.model_type in ['ripple']:
+    if len(users_to_test) == 0:
+        print("No users to test. Returning default result.")
+        return result
+    
+    # if args.model_type in ['ripple']:
 
-        u_batch_size = BATCH_SIZE
-        i_batch_size = BATCH_SIZE // 20
-    elif args.model_type in ['fm', 'nfm']:
-        u_batch_size = BATCH_SIZE
-        i_batch_size = BATCH_SIZE
-    else:
-        u_batch_size = BATCH_SIZE * 2
-        i_batch_size = BATCH_SIZE
+    #     u_batch_size = BATCH_SIZE
+    #     i_batch_size = BATCH_SIZE // 20
+    # elif args.model_type in ['fm', 'nfm']:
+    #     u_batch_size = BATCH_SIZE
+    #     i_batch_size = BATCH_SIZE
+    # else:
+    u_batch_size = BATCH_SIZE * 2
+    i_batch_size = BATCH_SIZE
 
     test_users = users_to_test
     n_test_users = len(test_users)
@@ -173,12 +176,13 @@ def test(sess, model, users_to_test, drop_flag=False, batch_test_flag=False):
         end = (u_batch_id + 1) * u_batch_size
 
         user_batch = test_users[start: end]
+        if len(user_batch) == 0:
+            print("Empty user batch. Skipping.")
+            continue
 
         if batch_test_flag:
-
             n_item_batchs = ITEM_NUM // i_batch_size + 1
             rate_batch = np.zeros(shape=(len(user_batch), ITEM_NUM))
-
             i_count = 0
             for i_batch_id in range(n_item_batchs):
                 i_start = i_batch_id * i_batch_size
@@ -206,12 +210,20 @@ def test(sess, model, users_to_test, drop_flag=False, batch_test_flag=False):
                                                                drop_flag=drop_flag)
             rate_batch = model.eval(sess, feed_dict=feed_dict)
             rate_batch = rate_batch.reshape((-1, len(item_batch)))
-
+        
+        if rate_batch.size == 0:
+            print("rate_batch is empty. Skipping.")
+            continue
+        
         user_batch_rating_uid = zip(rate_batch, user_batch)
         batch_result = pool.map(test_one_user, user_batch_rating_uid)
+
         count += len(batch_result)
 
         for re in batch_result:
+            if 'precision' not in re or 'recall' not in re:
+                print(f"Invalid result in batch: {re}")
+                continue
             result['precision'] += re['precision']/n_test_users
             result['recall'] += re['recall']/n_test_users
             result['ndcg'] += re['ndcg']/n_test_users
@@ -221,4 +233,5 @@ def test(sess, model, users_to_test, drop_flag=False, batch_test_flag=False):
 
     assert count == n_test_users
     pool.close()
+    print('Result: ', result)
     return result

@@ -52,7 +52,7 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='whether using knowledge graph embedding')
     parser.add_argument('--loss_type', nargs='?', default='bpr',
                         help='Specify a loss type from {bpr, ce}.')
-    parser.add_argument('--hop', nargs='?', default='one',
+    parser.add_argument('--hop', type = str, default='one',
                         help='Specify a loss type from {one,two,three}.')
     
 #other defaults not specified 

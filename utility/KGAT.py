@@ -424,12 +424,18 @@ class KGAT(object):
         indices = np.mat([self.all_h_list, self.all_t_list]).transpose()
         A = tf.SparseTensor(indices, self.A_values, self.A_in.shape)
         A = tf.sparse.softmax(A)
+        
+        n,m = self.A_in.shape
+        A_indices_identity = np.array([np.arange(n), np.arange(m)]).T
+        values_identity = np.ones(n, dtype = np.float32) * 0.25
+        A_identity = tf.sparse.SparseTensor(indices = A_indices_identity, values = values_identity, dense_shape = self.A_in.shape)
+        
         if self.hop == 'two': 
             alpha = 0.25 
             # Use sparse operations for two-hop computation
             two_hop = tf.sparse.sparse_dense_matmul(A, tf.sparse.to_dense(A))
-            A = tf.sparse.add(A,
-                alpha * tf.sparse.to_dense(A) + alpha * (1 - alpha)**2 * two_hop
+            A = tf.sparse.add(A_identity,
+                alpha * (1 - alpha) * tf.sparse.to_dense(A) + alpha * (1 - alpha)**2 * two_hop
             )
             
             print('calculated 2-hop attention')
@@ -437,8 +443,8 @@ class KGAT(object):
             alpha = 0.25 
             two_hop = tf.sparse.sparse_dense_matmul(A, tf.sparse.to_dense(A))
             three_hop = tf.sparse.sparse_dense_matmul(two_hop, tf.sparse.to_dense(A))
-            A = tf.sparse.add(A,
-                alpha * tf.sparse.to_dense(A) + alpha * (1 - alpha)**2 * two_hop + alpha * (1-alpha)**3 * three_hop
+            A = tf.sparse.add(A_identity,
+                alpha * (1 - alpha) * tf.sparse.to_dense(A) + alpha * (1 - alpha)**2 * two_hop + alpha * (1-alpha)**3 * three_hop
             )
             print('calculated 3-hop attention')
         else: 

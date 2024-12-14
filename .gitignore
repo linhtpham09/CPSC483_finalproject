@@ -1,4 +1,4 @@
-*.txt
+
 *.csv
 *.npz
 *.pyc
@@ -6,3 +6,8 @@
 *.zip
 sparsity.split
 scratch.py
+code_exploration
+*.log
+*.txt 
+*.result
+weights*

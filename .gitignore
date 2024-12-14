@@ -8,6 +8,6 @@ sparsity.split
 scratch.py
 code_exploration
 *.log
-*.txt 
+*.txt
 *.result
 weights*

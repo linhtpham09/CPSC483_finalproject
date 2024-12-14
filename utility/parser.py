@@ -54,6 +54,8 @@ python Main.py --model_type kgat --alg_type bi --dataset amazon-book
                         help='Specify a loss type from {bpr, ce}.')
     parser.add_argument('--hop', type = str, default='one',
                         help='Specify a loss type from {one,two,three}.')
+    parser.add_argument('--alpha', type = float, default=0.25,
+                        help='Please type a number for the alpha in attention diffusion')
     
 #other defaults not specified 
 

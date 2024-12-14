@@ -98,6 +98,7 @@ class KGAT(object):
         self.regs = ast.literal_eval(args.regs)
         self.verbose = args.verbose
         self.hop = args.hop
+        self.alpha = args.alpha
 
     def _build_inputs(self):
         # placeholder definition
@@ -431,7 +432,7 @@ class KGAT(object):
         A_identity = tf.sparse.SparseTensor(indices = A_indices_identity, values = values_identity, dense_shape = self.A_in.shape)
         
         if self.hop == 'two': 
-            alpha = 0.25 
+            alpha = self.alpha 
             # Use sparse operations for two-hop computation
             two_hop = tf.sparse.sparse_dense_matmul(A, tf.sparse.to_dense(A))
             A = tf.sparse.add(A_identity,
@@ -440,7 +441,7 @@ class KGAT(object):
             
             print('calculated 2-hop attention')
         elif self.hop == "three": 
-            alpha = 0.25 
+            alpha = self.alpha
             two_hop = tf.sparse.sparse_dense_matmul(A, tf.sparse.to_dense(A))
             three_hop = tf.sparse.sparse_dense_matmul(tf.sparse.from_dense(two_hop), tf.sparse.to_dense(A))
             A = tf.sparse.add(A,

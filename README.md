@@ -8,6 +8,7 @@ After conducting a literature search on GNN algorithms applied to recommendation
 After performing our tests, we saw that multi-hop attention did not improve model performance on the Taobao dataset. Furthermore, in general, the model provided better recommendations on the Amazon dataset. We propose that the reasons are most likely due to issues with the dataset (such as having few item features) and offer future steps to explore how modifying the attention mechanism in the KGAT will affect model performance. 
 
 [1] Wang, Guangtao, et al. “Multi-Hop Attention Graph Neural Network.” arXiv.Org, 29 Sept. 2020, https://arxiv.org/abs/2009.14332v5.
+
 [2] Ying, Rex, et al. “Graph Convolutional Neural Networks for Web-Scale Recommender Systems.” Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining, 2018, pp. 974–83. arXiv.org, https://doi.org/10.1145/3219819.3219890.
 
 ## Navigating documents 
